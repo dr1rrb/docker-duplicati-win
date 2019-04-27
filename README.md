@@ -10,7 +10,7 @@ Run the duplicati (https://www.duplicati.com/) backup tool on a Windows containe
 
 ## Run the container
 ```
-docker run -d -p 8200:8200 -v C:\Docker\Duplicati\Config:C:\config dr1rrb/duplicati
+docker run -d -p 8200:8200 -v C:\Docker\Duplicati\Config:C:\config dr1rrb/duplicati-win
 ```
 
 ## Tips: Running a Windows container on a AD joined host
