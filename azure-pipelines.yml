@@ -9,9 +9,6 @@ trigger:
 pool:
   vmImage: 'windows-2019'
 
-container:
-
-
 variables:
   dockerId: dr1rrb
   vmImage: duplicati-win
