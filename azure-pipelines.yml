@@ -10,16 +10,7 @@ variables:
 
 steps:
 - task: Docker@2
-  displayName: Login to DockerHub
   inputs:
-    command: login
-- task: Docker@2
-  displayName: Build and Push
-  inputs:
-    command: buildAndPush
-    repository: $(dockerId)/$(imageName)
-- task: Docker@2
-  displayName: Logout of DockerHub
-  inputs:
-    command: logout
-
+    containerRegistry: 'd8823755-22d5-49e3-a0cc-47a2cbd425b8'
+    repository: 'duplicati-win'
+    command: 'buildAndPush'
