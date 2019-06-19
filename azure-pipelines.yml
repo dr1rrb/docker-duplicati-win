@@ -37,6 +37,12 @@ steps:
       echo Version: $(version)
       echo Url: $(url)'
 
+- task: CmdLine@2
+  condition: $[or(eq('', '$(version)'), eq('', '$(url)'))]
+  inputs:
+    failOnStderr: true
+    script: 'echo Version and url must be defined >&2'
+
 - task: RegexReplace@3
   inputs:
     InputSearchPattern: 'Dockerfile'
