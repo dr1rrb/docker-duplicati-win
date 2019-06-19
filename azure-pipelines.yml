@@ -9,7 +9,8 @@ steps:
   inputs:
     containerRegistry: 'd8823755-22d5-49e3-a0cc-47a2cbd425b8'
     repository: 'dr1rrb/duplicati-win'
-    command: 'buildAndPush'
+    command: 'build'
     tags: |
       $(Build.BuildId)
+      $(duplicati.version)
       latest
