@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/framework/runtime:4.8
 WORKDIR C:\\duplicati
 
 # Download and unzip Duplicati
-RUN cmd /C curl -L https://github.com/duplicati/duplicati/releases/download/v2.0.4.17-2.0.4.17_canary_2019-04-11/duplicati-2.0.4.17_canary_2019-04-11.zip -o duplicati.zip & \
+RUN cmd /C curl -L {duplicati.installer} -o duplicati.zip & \
 tar -xf duplicati.zip & \
 del duplicati.zip
 
