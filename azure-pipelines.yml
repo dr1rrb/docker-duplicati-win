@@ -9,41 +9,21 @@ variables:
   - group: duplicati-beta
   - group: duplicati-canary
   
-  - name: channels
-    value: |
-      [ 
-        "default": { "version": '$(duplicati.default.version)', "url": '$(duplicati.default.url)'},
-        "stable": { "version": '$(duplicati.stable.version)', "url": '$(duplicati.stable.url)'},
-        "beta": { "version": '$(duplicati.beta.version)', "url": '$(duplicati.beta.url)'},
-        "canary": { "version": '$(duplicati.canary.version)', "url": '$(duplicati.canary.url)'},
-        "custom": { "version": '$(duplicati.version)', "url": '$(duplicati.url)'},
-      ]
   - name: channel
     value: $[coalesce('$(duplicati.channel)', 'default')]
-  - name: version
-    value: $[variables['channels'][variables['channel']].version]
-  - name: url 
-    value: $[variables['channels'][variables['channel']].url]
 
 pool:
   vmImage: 'windows-2019'
 
 steps:
-- task: CmdLine@2
+- task: PowerShell@2
+  displayName: Get config
   inputs:
-    script: '
-      echo Generate the Duplicati Windows Docker image for 
-      echo Channel: $(channel)
-      echo Version: $(version)
-      echo Url: $(url)'
-
-- task: CmdLine@2
-  condition: or(eq('', '$(version)'), eq('', '$(url)'))
-  inputs:
+    filePath: 'azure-pipelines.get-config.ps1'
     failOnStderr: true
-    script: 'echo Version and url must be defined >&2'
 
 - task: RegexReplace@3
+  displayName: Generate Dockerfile with the given installer url
   inputs:
     InputSearchPattern: 'Dockerfile'
     FindRegex: '\{duplicati\.url\}'
@@ -51,17 +31,20 @@ steps:
     UseUTF8: true
 
 - task: CopyFiles@2
+  displayName: Copy Dockerfile to artifacts
   inputs:
     Contents: 'Dockerfile'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 - task: PublishBuildArtifacts@1
+  displayName: Publish artifacts
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'Docker file'
     publishLocation: 'Container'
 
 - task: Docker@2
+  displayName: Validate that the generated Dockerfile is valid
   inputs:
     containerRegistry: 'd8823755-22d5-49e3-a0cc-47a2cbd425b8'
     repository: 'dr1rrb/duplicati-win'
