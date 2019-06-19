@@ -5,12 +5,28 @@ pool:
   vmImage: 'windows-2019'
 
 steps:
+- task: RegexReplace@3
+  inputs:
+    InputSearchPattern: 'Dockerfile'
+    FindRegex: '\{duplicati\.installer\}'
+    ReplaceRegex: '$(duplicati.installer)'
+    UseUTF8: true
+
 - task: Docker@2
   inputs:
     containerRegistry: 'd8823755-22d5-49e3-a0cc-47a2cbd425b8'
     repository: 'dr1rrb/duplicati-win'
     command: 'build'
-    tags: |
-      $(Build.BuildId)
-      $(duplicati.version)
-      latest
+    tags: latest
+
+- task: CopyFiles@2
+  inputs:
+    Contents: 'Dockerfile'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: PublishBuildArtifacts@1
+  condition: always()
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'Docker file'
+    publishLocation: 'Container'
