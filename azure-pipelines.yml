@@ -1,15 +1,63 @@
 trigger:
 - master
 
+variables:
+  # The lastest most stable version (as of 2019-06-19, this should be 'beta')
+  - group: duplicati-default
+
+  - group: duplicati-stable
+  - group: duplicati-beta
+  - group: duplicati-canary
+  
+  - name: channels
+    value: |
+      [ 
+        "default": { "version": '$(duplicati.default.version)', "url": '$(duplicati.default.url)'},
+        "stable": { "version": '$(duplicati.stable.version)', "url": '$(duplicati.stable.url)'},
+        "beta": { "version": '$(duplicati.beta.version)', "url": '$(duplicati.beta.url)'},
+        "canary": { "version": '$(duplicati.canary.version)', "url": '$(duplicati.canary.url)'},
+        "custom": { "version": '$(duplicati.version)', "url": '$(duplicati.url)'},
+      ]
+  - name: channel
+    value: $[coalesce('$(duplicati.channel)', 'default')]
+  - name: version
+    value: $[variables['channels'][variables['channel']].version]
+  - name: url 
+    value: $[variables['channels'][variables['channel']].url]
+
 pool:
   vmImage: 'windows-2019'
 
 steps:
+- task: CmdLine@2
+  inputs:
+    script: '
+      echo Generate the Duplicati Windows Docker image for 
+      echo Channel: $(channel)
+      echo Version: $(version)
+      echo Url: $(url)'
+
+- task: RegexReplace@3
+  inputs:
+    InputSearchPattern: 'Dockerfile'
+    FindRegex: '\{duplicati\.url\}'
+    ReplaceRegex: '$(url)'
+    UseUTF8: true
+
+- task: CopyFiles@2
+  inputs:
+    Contents: 'Dockerfile'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'Docker file'
+    publishLocation: 'Container'
+
 - task: Docker@2
   inputs:
     containerRegistry: 'd8823755-22d5-49e3-a0cc-47a2cbd425b8'
     repository: 'dr1rrb/duplicati-win'
-    command: 'buildAndPush'
-    tags: |
-      $(Build.BuildId)
-      latest
+    command: 'build'
+    tags: latest
