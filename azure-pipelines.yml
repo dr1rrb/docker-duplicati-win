@@ -7,10 +7,8 @@ variables:
 
   - group: duplicati-stable
   - group: duplicati-beta
+  - group: duplicati-experimental
   - group: duplicati-canary
-  
-  - name: channel
-    value: $[coalesce('$(duplicati.channel)', 'default')]
 
 pool:
   vmImage: 'windows-2019'
@@ -26,8 +24,8 @@ steps:
   displayName: Generate Dockerfile with the given installer url
   inputs:
     InputSearchPattern: 'Dockerfile'
-    FindRegex: '\{duplicati\.url\}'
-    ReplaceRegex: '$(url)'
+    FindRegex: '\{duplicati\.install\}'
+    ReplaceRegex: '$(duplicati.install)'
     UseUTF8: true
 
 - task: CopyFiles@2

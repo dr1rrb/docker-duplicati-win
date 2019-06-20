@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/framework/runtime:4.8
 WORKDIR C:\\duplicati
 
 # Download and unzip Duplicati
-RUN cmd /C curl -L {duplicati.url} -o duplicati.zip & \
+RUN cmd /C curl -L {duplicati.install} -o duplicati.zip & \
 tar -xf duplicati.zip & \
 del duplicati.zip
 
