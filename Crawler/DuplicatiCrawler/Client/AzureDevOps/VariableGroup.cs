@@ -17,6 +17,9 @@ namespace Crawler.Client.AzureDevOps
 		public Dictionary<string, Variable> Variables { get; set; }
 
 		// Yes its ugly ... it a mutable entity
+		[JsonIgnore]
+		public string this[string key] => Variables[Name.Replace('-', '.') + '.' + key].Value;
+
 		public bool TryUpdate(string key, string value)
 		{
 			var variable = Variables[Name.Replace('-', '.') + '.' + key];
