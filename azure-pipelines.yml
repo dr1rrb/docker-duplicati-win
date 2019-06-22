@@ -9,6 +9,9 @@ variables:
   - group: duplicati-beta
   - group: duplicati-experimental
   - group: duplicati-canary
+  
+  - name: BuildConfiguration
+    value: Release
 
 pool:
   vmImage: 'windows-2019'
@@ -20,6 +23,30 @@ steps:
     filePath: 'azure-pipelines.get-config.ps1'
     failOnStderr: true
 
+
+## Crawler ######################################################################
+- task: DotNetCoreCLI@2
+  displayName: Build crawler
+  inputs:
+    command: 'pack'
+    projects: 'Crawler\DuplicatiCrawler.sln'
+    versioningScheme: 'off'
+
+- task: CopyFiles@2
+  displayName: Copy crawler to artifacts
+  inputs:
+    Contents: 'Crawler\DuplicatiCrawler\bin\Release\**\publish\**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\Crawler'
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish crawler artifacts
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\Crawler'
+    ArtifactName: 'Crawler'
+    publishLocation: 'Container'
+
+
+## Docker ######################################################################
 - task: RegexReplace@3
   displayName: Generate Dockerfile with the given installer url
   inputs:
@@ -32,15 +59,16 @@ steps:
   displayName: Copy Dockerfile to artifacts
   inputs:
     Contents: 'Dockerfile'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-
+    TargetFolder: '$(Build.ArtifactStagingDirectory)\Docker'
+    
 - task: PublishBuildArtifacts@1
-  displayName: Publish artifacts
+  displayName: Publish Dockerfile (and config) artifacts
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\Docker'
     ArtifactName: 'Docker file'
     publishLocation: 'Container'
 
+# This is the last task as it's the longest, and we don't needs it output
 - task: Docker@2
   displayName: Validate that the generated Dockerfile is valid
   inputs:
