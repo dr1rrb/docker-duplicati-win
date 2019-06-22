@@ -4,6 +4,8 @@
 
 $artifacts = $Env:BUILD_ARTIFACTSTAGINGDIRECTORY
 cd $artifacts
+mkdir Docker
+cd Docker
 
 $channels = "default", "stable", "beta", "experimental", "canary", "custom"
 $channel  = $Env:DUPLICATI_CHANNEL
