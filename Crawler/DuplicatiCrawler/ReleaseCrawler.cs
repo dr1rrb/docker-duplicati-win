@@ -20,13 +20,22 @@ namespace Crawler
 {
 	public static class ReleaseCrawler
 	{
-		[FunctionName("ReleaseCrawler")]
-		public static async void Run([TimerTrigger("0 3 * * *")] TimerInfo myTimer, ILogger log, CancellationToken ct)
+#if DEBUG
+		private static readonly string[] _channels = new[] { "canary" };
+#else
+		private static readonly string[] _channels = new[] { "stable", "beta", "experimental", "canary" };
+#endif
+
+		[FunctionName("ScheduledCrawl")]
+		public static async void RunScheduledCrawl(
+			[TimerTrigger("0 0 3 * * *")] TimerInfo myTimer,
+			ILogger log,
+			CancellationToken ct)
 		{
 			log.LogInformation($"Launching crawler ({DateTime.Now})");
 			try
 			{
-				await Crawl(ct);
+				await CrawlReleases(ct, _channels);
 			}
 			catch (Exception e)
 			{
@@ -34,16 +43,20 @@ namespace Crawler
 			}
 		}
 
-		[FunctionName("Crawl")]
-		public static async Task<IActionResult> Run(
-			[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "crawl")]
-			HttpRequest req,
+		[FunctionName("ImmediateCrawl")]
+		public static async Task<IActionResult> RunImmediateCrawl(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "crawl/{channel?}")] HttpRequest req,
 			ILogger log,
-			CancellationToken ct)
+			CancellationToken ct,
+			[FromQuery] string channel = null)
 		{
 			try
 			{
-				return new OkObjectResult(await Crawl(ct));
+				var channels = channel.IsNullOrWhiteSpace()
+					? _channels
+					: new[] {channel};
+
+				return new OkObjectResult(await CrawlReleases(ct, channels));
 			}
 			catch (Exception e)
 			{
@@ -53,23 +66,13 @@ namespace Crawler
 			}
 		}
 
-		private static async Task<UpdateResult[]> Crawl(CancellationToken ct)
+		private static async Task<UpdateResult[]> CrawlReleases(CancellationToken ct, string[] channels)
 		{
 			var config = new ConfigurationBuilder()
 				.AddJsonFile("host.json", optional: true, reloadOnChange: true)
 				.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
 				.AddEnvironmentVariables()
 				.Build();
-
-			var clientId = config["ClientId"];
-			var clientSecret = config["ClientSecret"];
-			var aadDomain = config["AADDomain"];
-
-#if DEBUG
-			var channels = new[] { "canary" };
-#else
-			var channels = new[] { "stable", "beta", "experimental", "canary" };
-#endif
 
 			using (var gitHub = new GitHubApi())
 			using (var azure = new AzureDevOpsApi(config["azureDevOpsAuth"]))
