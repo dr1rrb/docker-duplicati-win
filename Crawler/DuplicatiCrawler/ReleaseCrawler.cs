@@ -134,7 +134,7 @@ namespace Crawler
 								@default.TryUpdate("url", release.data.Url);
 								@default.TryUpdate("notes", release.data.Notes);
 								
-								await azure.UpdateBuildVariables(group, ct);
+								await azure.UpdateBuildVariables(@default, ct);
 
 								status = "queuing new **default** build";
 								await azure.QueueBuild("default", ct); // So the image is tagged as 'latest'
