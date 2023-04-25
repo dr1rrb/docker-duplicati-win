@@ -28,9 +28,12 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: Build crawler
   inputs:
-    command: 'pack'
+    command: 'publish'
     projects: 'Crawler\DuplicatiCrawler.sln'
     versioningScheme: 'off'
+    publishWebProjects: false
+    zipAfterPublish: false
+    arguments: '-p:CONFIGURATION=Release'
 
 - task: CopyFiles@2
   displayName: Copy crawler to artifacts

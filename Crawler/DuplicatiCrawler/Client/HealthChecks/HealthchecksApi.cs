@@ -34,7 +34,7 @@ namespace Crawler.Client.HealthChecks
 		{
 			try
 			{
-				var check = _config["hc-" + identifier];
+				var check = _config["HC_" + identifier];
 				if (check.IsNullOrWhiteSpace())
 				{
 					return;

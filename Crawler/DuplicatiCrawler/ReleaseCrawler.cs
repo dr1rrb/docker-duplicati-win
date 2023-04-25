@@ -28,7 +28,7 @@ namespace Crawler
 #endif
 
 		[FunctionName("ScheduledCrawl")]
-		public static async void RunScheduledCrawl(
+		public static async Task RunScheduledCrawl(
 			[TimerTrigger("0 0 3 * * *")] TimerInfo myTimer,
 			ILogger log,
 			CancellationToken ct)
@@ -77,7 +77,7 @@ namespace Crawler
 
 			using (var hc = new HealthchecksApi(config, log))
 			using (var gitHub = new GitHubApi())
-			using (var azure = new AzureDevOpsApi(config["azureDevOpsAuth"]))
+			using (var azure = new AzureDevOpsApi(config["AZURE_AUTH"]))
 			{
 				var releases = await gitHub.GetDuplicatiReleases(ct);
 				var variables = await azure.GetBuildVariables(ct);
