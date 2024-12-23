@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Crawler
 {
-	public class UpdateResult
+	internal sealed class UpdateResult
 	{
 		public static UpdateResult NotChanged(string channel) => new UpdateResult
 		{
@@ -27,12 +27,12 @@ namespace Crawler
 			Error = error
 		};
 
-		public string Channel { get; set; }
+		public required string Channel { get; set; }
 
-		public string Result { get; set; }
+		public required string Result { get; set; }
 
-		public string Message { get; set; }
+		public required string Message { get; set; }
 			
-		public Exception Error { get; set; }
+		public Exception? Error { get; set; }
 	}
 }

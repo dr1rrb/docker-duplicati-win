@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Crawler;
 
-public class ReleaseCrawler(ILogger<ReleaseCrawler> log)
+internal sealed class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 {
 #if DEBUG
 	private static readonly string[] _channels = new[] { "canary" };
@@ -70,7 +70,7 @@ public class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 
 		using (var hc = new HealthchecksApi(config, log))
 		using (var gitHub = new GitHubApi())
-		using (var azure = new AzureDevOpsApi(config["AZURE_AUTH"]))
+		using (var azure = new AzureDevOpsApi(config["AZURE_AUTH"] ?? throw new InvalidOperationException("No azure auth token configured.")))
 		{
 			var releases = await gitHub.GetDuplicatiReleases(ct);
 			var variables = await azure.GetBuildVariables(ct);
@@ -87,7 +87,7 @@ public class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 					status = "searching release";
 					if (!releases.TryGetValue(channel, out var release))
 					{
-						throw new Exception($"Cannot find release for {channel}");
+						throw new InvalidOperationException($"Cannot find release for {channel}");
 					}
 
 					status = "reporting start to healthchecks";
@@ -96,15 +96,15 @@ public class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 					status = "searching variable group";
 					if (!variables.TryGetValue(channel, out var group))
 					{
-						throw new Exception($"Cannot find build variables for {channel}");
+						throw new InvalidOperationException($"Cannot find build variables for {channel}");
 					}
 
 					status = "analyzing build config vs. found release";
 					var install = release.data.Assets.FirstOrDefault(a => a.Url.EndsWith(release.version + ".zip", StringComparison.OrdinalIgnoreCase))?.Url;
 					var version = release.version;
-					if (install.IsNullOrWhiteSpace() || version.IsNullOrWhiteSpace())
+					if (install is not { Length: > 0 } || version is not { Length: > 0 })
 					{
-						throw new Exception($"The found release is invalid for {channel} (Failed to get required values 'install' and 'version')");
+						throw new InvalidOperationException($"The found release is invalid for {channel} (Failed to get required values 'install' and 'version')");
 					}
 
 					var hasChanged = false;

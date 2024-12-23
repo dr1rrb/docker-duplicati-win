@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Crawler.Client.HealthChecks
 {
-	public class HealthchecksApi : IDisposable
+	internal sealed class HealthchecksApi : IDisposable
 	{
 		private readonly IConfigurationRoot _config;
 		private readonly ILogger _log;
@@ -35,7 +35,7 @@ namespace Crawler.Client.HealthChecks
 			try
 			{
 				var check = _config["HC_" + identifier];
-				if (check.IsNullOrWhiteSpace())
+				if (check is not { Length: > 0 })
 				{
 					return;
 				}

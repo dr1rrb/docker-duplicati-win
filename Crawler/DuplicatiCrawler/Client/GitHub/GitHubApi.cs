@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 
 namespace Crawler.Client.GitHub
 {
-	public class GitHubApi : IDisposable
+	internal sealed class GitHubApi : IDisposable
 	{
 		private static readonly Regex _releaseVersion = new Regex(@"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+_(?<channel>[a-zA-Z]+)_[0-9]{4}-[0-9]{2}-[0-9]{2}");
 
@@ -31,9 +31,8 @@ namespace Crawler.Client.GitHub
 		{
 			using (var response = await _client.GetAsync(new Uri("https://api.github.com/repos/duplicati/duplicati/releases"), ct))
 			{
-				var raw = await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
-				return JsonSerializer
-					.Deserialize<Release[]>(raw)
+				var raw = await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync(ct);
+				return (JsonSerializer.Deserialize<Release[]>(raw) ?? [])
 					.Select(r => new
 					{
 						release = r,

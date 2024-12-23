@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace Crawler.Client.GitHub
 {
-	public class Asset
+	internal sealed class Asset
 	{
 		[JsonPropertyName("browser_download_url")]
-		public string Url { get; set; }
+		public required string Url { get; set; }
 	}
 }

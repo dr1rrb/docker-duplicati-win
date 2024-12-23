@@ -5,16 +5,16 @@ using System.Text.Json.Serialization;
 
 namespace Crawler.Client.AzureDevOps
 {
-	public class VariableGroup
+	internal sealed class VariableGroup
 	{
 		[JsonPropertyName("id")]
-		public uint Id { get; set; }
+		public required uint Id { get; set; }
 
 		[JsonPropertyName("name")]
-		public string Name { get; set; }
+		public required string Name { get; set; }
 
 		[JsonPropertyName("variables")]
-		public Dictionary<string, Variable> Variables { get; set; }
+		public required Dictionary<string, Variable> Variables { get; init; }
 
 		// Yes its ugly ... it a mutable entity
 		[JsonIgnore]

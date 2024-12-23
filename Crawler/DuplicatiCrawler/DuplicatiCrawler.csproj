@@ -4,6 +4,11 @@
 		<AzureFunctionsVersion>V4</AzureFunctionsVersion>
 		<OutputType>Exe</OutputType>
 		<RootNamespace>Crawler</RootNamespace>
+
+		<Nullable>Enable</Nullable>
+		<AnalysisMode>AllEnabledByDefault</AnalysisMode>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<NoWarn>$(NoWarn);CA2007;CA2234;CA1056;CA1063;CA1812;CA1031;CA1848;CA1816;CA2254</NoWarn>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />

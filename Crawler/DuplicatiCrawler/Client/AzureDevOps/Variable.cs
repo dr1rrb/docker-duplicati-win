@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace Crawler.Client.AzureDevOps
 {
-	public class Variable
+	internal sealed class Variable
 	{
 		[JsonPropertyName("value")]
-		public string Value { get; set; }
+		public required string Value { get; set; }
 	}
 }

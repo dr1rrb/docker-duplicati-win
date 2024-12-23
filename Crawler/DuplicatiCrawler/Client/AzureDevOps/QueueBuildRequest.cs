@@ -4,12 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace Crawler.Client.AzureDevOps
 {
-	public class QueueBuildRequest
+	internal sealed class QueueBuildRequest
 	{
 		[JsonPropertyName("definition")]
-		public BuildDefinition Definition { get; set; }
+		public required BuildDefinition Definition { get; set; }
 
 		[JsonPropertyName("parameters")]
-		public string Parameters { get; set; }
+		public required string Parameters { get; set; }
 	}
 }
