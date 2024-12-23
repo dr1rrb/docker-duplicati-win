@@ -1,23 +1,11 @@
 using System;
-using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
-namespace Crawler.Client.GitHub
-{
-	public class Release
-	{
-		[JsonProperty("html_url")]
-		public string Url { get; set; }
+namespace Crawler.Client.GitHub;
 
-		[JsonProperty("name")]
-		public string Version { get; set; }
-
-		[JsonProperty("body")]
-		public string Notes { get; set; }
-
-		public Asset[] Assets { get; set; }
-
-		[JsonProperty("published_at")]
-		public DateTimeOffset PublicationDate { get; set; }
-	}
-}
+internal sealed record Release(
+	[property: JsonPropertyName("html_url")] string Url,
+	[property: JsonPropertyName("name")] string Version,
+	[property: JsonPropertyName("body")] string Notes,
+	[property: JsonPropertyName("assets")] Asset[] Assets,
+	[property: JsonPropertyName("published_at")] DateTimeOffset PublicationDate);

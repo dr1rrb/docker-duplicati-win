@@ -1,12 +1,5 @@
-using System;
-using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
-namespace Crawler.Client.GitHub
-{
-	public class Asset
-	{
-		[JsonProperty("browser_download_url")]
-		public string Url { get; set; }
-	}
-}
+namespace Crawler.Client.GitHub;
+
+internal sealed record Asset([property: JsonPropertyName("browser_download_url")] string Url);

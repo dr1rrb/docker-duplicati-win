@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/framework/runtime:4.8
+FROM mcr.microsoft.com/dotnet/runtime:9.0-windowsservercore-ltsc2019
 
 WORKDIR C:\\duplicati
 

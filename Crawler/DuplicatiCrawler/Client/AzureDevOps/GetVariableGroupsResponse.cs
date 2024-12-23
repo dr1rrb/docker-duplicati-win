@@ -1,12 +1,5 @@
-using System;
-using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
-namespace Crawler.Client.AzureDevOps
-{
-	internal class GetVariableGroupsResponse
-	{
-		[JsonProperty("value")]
-		public VariableGroup[] Groups { get; set; }
-	}
-}
+namespace Crawler.Client.AzureDevOps;
+
+internal sealed record GetVariableGroupsResponse([property: JsonPropertyName("value")] VariableGroup[] Groups);

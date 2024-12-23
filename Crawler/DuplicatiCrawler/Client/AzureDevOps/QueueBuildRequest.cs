@@ -1,15 +1,7 @@
-using System;
-using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
-namespace Crawler.Client.AzureDevOps
-{
-	public class QueueBuildRequest
-	{
-		[JsonProperty("definition")]
-		public BuildDefinition Definition { get; set; }
+namespace Crawler.Client.AzureDevOps;
 
-		[JsonProperty("parameters")]
-		public string Parameters { get; set; }
-	}
-}
+internal sealed record QueueBuildRequest(
+	[property: JsonPropertyName("definition")] BuildDefinition Definition,
+	[property: JsonPropertyName("parameters")] string Parameters);

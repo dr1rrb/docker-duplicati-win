@@ -1,12 +1,5 @@
-using System;
-using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
-namespace Crawler.Client.AzureDevOps
-{
-	public class Variable
-	{
-		[JsonProperty("value")]
-		public string Value { get; set; }
-	}
-}
+namespace Crawler.Client.AzureDevOps;
+
+internal sealed record Variable([property: JsonPropertyName("value")] string Value);
