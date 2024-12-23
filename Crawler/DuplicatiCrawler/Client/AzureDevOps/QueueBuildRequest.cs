@@ -1,15 +1,15 @@
 using System;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Crawler.Client.AzureDevOps
 {
 	public class QueueBuildRequest
 	{
-		[JsonProperty("definition")]
+		[JsonPropertyName("definition")]
 		public BuildDefinition Definition { get; set; }
 
-		[JsonProperty("parameters")]
+		[JsonPropertyName("parameters")]
 		public string Parameters { get; set; }
 	}
 }

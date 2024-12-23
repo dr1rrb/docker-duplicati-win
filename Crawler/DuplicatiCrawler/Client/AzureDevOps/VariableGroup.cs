@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Crawler.Client.AzureDevOps
 {
 	public class VariableGroup
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
 		public uint Id { get; set; }
 
-		[JsonProperty("name")]
+		[JsonPropertyName("name")]
 		public string Name { get; set; }
 
-		[JsonProperty("variables")]
+		[JsonPropertyName("variables")]
 		public Dictionary<string, Variable> Variables { get; set; }
 
 		// Yes its ugly ... it a mutable entity

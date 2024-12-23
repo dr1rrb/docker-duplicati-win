@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Crawler.Extensions;
-using Newtonsoft.Json;
 
 namespace Crawler.Client.AzureDevOps
 {
@@ -31,7 +32,7 @@ namespace Crawler.Client.AzureDevOps
 			using (var response = await _client.GetAsync("distributedtask/variablegroups?api-version=5.0-preview.1", ct))
 			{
 				var raw = await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
-				var groups = JsonConvert.DeserializeObject<GetVariableGroupsResponse>(raw).Groups;
+				var groups = JsonSerializer.Deserialize<GetVariableGroupsResponse>(raw).Groups;
 
 				return groups.ToDictionary(g => g.Name.TrimStart("duplicati-", StringComparison.OrdinalIgnoreCase));
 			}
@@ -39,7 +40,7 @@ namespace Crawler.Client.AzureDevOps
 
 		public async Task UpdateBuildVariables(VariableGroup group, CancellationToken ct)
 		{
-			var body = new StringContent(JsonConvert.SerializeObject(group, Formatting.None), Encoding.UTF8, "application/json");
+			var body = new StringContent(JsonSerializer.Serialize(group), Encoding.UTF8, "application/json");
 
 			using (var response = await _client.PutAsync($"distributedtask/variablegroups/{@group.Id}?api-version=5.0-preview.1", body, ct))
 			{
@@ -59,9 +60,9 @@ namespace Crawler.Client.AzureDevOps
 				{
 					Id = 1
 				},
-				Parameters = JsonConvert.SerializeObject(parameters, Formatting.None)
+				Parameters = JsonSerializer.Serialize(parameters)
 			};
-			var body = new StringContent(JsonConvert.SerializeObject(request, Formatting.None), Encoding.UTF8, "application/json");
+			var body = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
 
 			using (var response = await _client.PostAsync("build/builds?api-version=5.0", body, ct))
 			{

@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Crawler.Client.AzureDevOps
 {
 	public class BuildDefinition
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
 		public int Id { get; set; }
 	}
 }

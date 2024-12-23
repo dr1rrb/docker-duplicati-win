@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Crawler.Client.GitHub
 {
@@ -31,8 +32,8 @@ namespace Crawler.Client.GitHub
 			using (var response = await _client.GetAsync(new Uri("https://api.github.com/repos/duplicati/duplicati/releases"), ct))
 			{
 				var raw = await response.EnsureSuccessStatusCode().Content.ReadAsStringAsync();
-				return JsonConvert
-					.DeserializeObject<Release[]>(raw)
+				return JsonSerializer
+					.Deserialize<Release[]>(raw)
 					.Select(r => new
 					{
 						release = r,
