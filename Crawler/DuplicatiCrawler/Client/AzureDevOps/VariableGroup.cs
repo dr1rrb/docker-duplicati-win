@@ -1,38 +1,24 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 
-namespace Crawler.Client.AzureDevOps
+namespace Crawler.Client.AzureDevOps;
+
+internal sealed record VariableGroup(
+	[property: JsonPropertyName("id")] uint Id,
+	[property: JsonPropertyName("name")] string Name,
+	[property: JsonPropertyName("variables")] ImmutableDictionary<string, Variable> Variables)
 {
-	internal sealed class VariableGroup
+	[JsonIgnore]
+	public string this[string key] => Variables[Name.Replace('-', '.') + '.' + key].Value;
+
+	public VariableGroup With(string key, string value)
 	{
-		[JsonPropertyName("id")]
-		public required uint Id { get; set; }
+		var variableName = Name.Replace('-', '.') + '.' + key;
 
-		[JsonPropertyName("name")]
-		public required string Name { get; set; }
-
-		[JsonPropertyName("variables")]
-		public required Dictionary<string, Variable> Variables { get; init; }
-
-		// Yes its ugly ... it a mutable entity
-		[JsonIgnore]
-		public string this[string key] => Variables[Name.Replace('-', '.') + '.' + key].Value;
-
-		public bool TryUpdate(string key, string value)
-		{
-			var variable = Variables[Name.Replace('-', '.') + '.' + key];
-
-			if (variable.Value.Equals(value, StringComparison.OrdinalIgnoreCase))
-			{
-				return false;
-			}
-			else
-			{
-				variable.Value = value;
-				return true;
-			}
-		}
+		return Variables.TryGetValue(variableName, out var current)
+			&& current.Value.Equals(value, StringComparison.Ordinal)
+			? this 
+			: this with { Variables = Variables.SetItem(variableName, new(value)) };
 	}
 }

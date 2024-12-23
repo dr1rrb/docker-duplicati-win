@@ -5,21 +5,19 @@ using System.Threading.Tasks;
 using Crawler.Client.AzureDevOps;
 using Crawler.Client.GitHub;
 using Crawler.Client.HealthChecks;
-using Crawler.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Crawler;
 
-internal sealed class ReleaseCrawler(ILogger<ReleaseCrawler> log)
+internal sealed class ReleaseCrawler(HealthchecksApi hc, GitHubApi gitHub, AzureDevOpsApi azure, ILogger<ReleaseCrawler> log)
 {
 #if DEBUG
-	private static readonly string[] _channels = new[] { "canary" };
+	private static readonly string[] _channels = ["canary"];
 #else
-	private static readonly string[] _channels = new[] { "stable", "beta", "experimental", "canary" };
+	private static readonly string[] _channels = ["stable", "beta", "experimental", "canary"];
 #endif
 
 	[Function("ScheduledCrawl")]
@@ -30,7 +28,7 @@ internal sealed class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 		log.LogInformation($"Launching crawler ({DateTime.Now})");
 		try
 		{
-			await CrawlReleases(_channels, log, ct);
+			await CrawlReleases(_channels, ct);
 		}
 		catch (Exception e)
 		{
@@ -46,11 +44,9 @@ internal sealed class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 	{
 		try
 		{
-			var channels = channel.IsNullOrWhiteSpace()
-				? _channels
-				: new[] {channel};
+			var channels = channel is { Length: > 0 } ? [channel] : _channels;
 
-			return new OkObjectResult(await CrawlReleases(channels, log, ct));
+			return new OkObjectResult(await CrawlReleases(channels, ct));
 		}
 		catch (Exception e)
 		{
@@ -60,103 +56,93 @@ internal sealed class ReleaseCrawler(ILogger<ReleaseCrawler> log)
 		}
 	}
 
-	private static async Task<UpdateResult[]> CrawlReleases(string[] channels, ILogger log, CancellationToken ct)
+	private async Task<UpdateResult[]> CrawlReleases(string[] channels, CancellationToken ct)
 	{
-		var config = new ConfigurationBuilder()
-			.AddJsonFile("host.json", optional: true, reloadOnChange: true)
-			.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-			.AddEnvironmentVariables()
-			.Build();
+		var releases = await gitHub.GetDuplicatiReleases(ct);
+		var variables = await azure.GetBuildVariables(ct);
 
-		using (var hc = new HealthchecksApi(config, log))
-		using (var gitHub = new GitHubApi())
-		using (var azure = new AzureDevOpsApi(config["AZURE_AUTH"] ?? throw new InvalidOperationException("No azure auth token configured.")))
+		var @default = variables["default"];
+
+		return await Task.WhenAll(channels.Select(TryUpdateChannel));
+
+		async Task<UpdateResult> TryUpdateChannel(string channel)
 		{
-			var releases = await gitHub.GetDuplicatiReleases(ct);
-			var variables = await azure.GetBuildVariables(ct);
-
-			var @default = variables["default"];
-
-			return await Task.WhenAll(channels.Select(TryUpdateChannel));
-
-			async Task<UpdateResult> TryUpdateChannel(string channel)
+			var status = "parsing inputs";
+			try
 			{
-				var status = "parsing inputs";
-				try
+				status = "searching release";
+				if (!releases.TryGetValue(channel, out var release))
 				{
-					status = "searching release";
-					if (!releases.TryGetValue(channel, out var release))
+					throw new InvalidOperationException($"Cannot find release for {channel}");
+				}
+
+				status = "reporting start to healthchecks";
+				await hc.Start(channel, ct); // we report to HC only if we found a release. This prevent issue with the still awaited "stable" version :)
+
+				status = "searching variable group";
+				if (!variables.TryGetValue(channel, out var group))
+				{
+					throw new InvalidOperationException($"Cannot find build variables for {channel}");
+				}
+
+				status = "analyzing build config vs. found release";
+				var install = release.data.Assets.FirstOrDefault(a => a.Url.EndsWith(release.version + "-win-x64-gui.zip", StringComparison.OrdinalIgnoreCase))?.Url;
+				var version = release.version;
+				if (install is not { Length: > 0 } || version is not { Length: > 0 })
+				{
+					throw new InvalidOperationException($"The found release is invalid for {channel} (Failed to get required values 'install' and 'version')");
+				}
+
+				var updated = group
+					.With("install", install)
+					.With("version", version)
+					.With("url", release.data.Url)
+					.With("notes", release.data.Notes);
+
+				if (updated != group)
+				{
+					status = "updating build variables";
+					await azure.UpdateBuildVariables(updated, ct);
+
+					if (@default["channel"] == channel)
 					{
-						throw new InvalidOperationException($"Cannot find release for {channel}");
-					}
+						status = "updating **default** build variables";
 
-					status = "reporting start to healthchecks";
-					await hc.Start(channel, ct); // we report to HC only if we found a release. This prevent issue with the still awaited "stable" version :)
-
-					status = "searching variable group";
-					if (!variables.TryGetValue(channel, out var group))
-					{
-						throw new InvalidOperationException($"Cannot find build variables for {channel}");
-					}
-
-					status = "analyzing build config vs. found release";
-					var install = release.data.Assets.FirstOrDefault(a => a.Url.EndsWith(release.version + ".zip", StringComparison.OrdinalIgnoreCase))?.Url;
-					var version = release.version;
-					if (install is not { Length: > 0 } || version is not { Length: > 0 })
-					{
-						throw new InvalidOperationException($"The found release is invalid for {channel} (Failed to get required values 'install' and 'version')");
-					}
-
-					var hasChanged = false;
-					hasChanged |= group.TryUpdate("install", install);
-					hasChanged |= group.TryUpdate("version", version);
-					hasChanged |= group.TryUpdate("url", release.data.Url);
-					hasChanged |= group.TryUpdate("notes", release.data.Notes);
-
-					if (hasChanged)
-					{
-						status = "updating build variables";
-						await azure.UpdateBuildVariables(group, ct);
-
-						if (@default["channel"] == channel)
-						{
-							status = "updating **default** build variables";
-
-							@default.TryUpdate("install", install);
-							@default.TryUpdate("version", version);
-							@default.TryUpdate("url", release.data.Url);
-							@default.TryUpdate("notes", release.data.Notes);
+						@default
+							.With("install", install)
+							.With("version", version)
+							.With("url", release.data.Url)
+							.With("notes", release.data.Notes);
 								
-							await azure.UpdateBuildVariables(@default, ct);
+						await azure.UpdateBuildVariables(@default, ct);
 
-							status = "queuing new **default** build";
-							await azure.QueueBuild("default", ct); // So the image is tagged as 'latest'
-						}
-						else
-						{
-							status = "queuing new build";
-							await azure.QueueBuild(channel, ct);
-						}
-
-						status = "reporting success to healthchecks";
-						await hc.Report(channel, ct);
-
-						return UpdateResult.Succeeded(channel);
+						status = "queuing new **default** build";
+						await azure.QueueBuild("default", ct); // So the image is tagged as 'latest'
 					}
 					else
 					{
-						status = "reporting success (not changed) to healthchecks";
-						await hc.Report(channel, ct);
-
-						return UpdateResult.NotChanged(channel);
+						status = "queuing new build";
+						await azure.QueueBuild(channel, ct);
 					}
-				}
-				catch (Exception e)
-				{
-					await hc.Failed(channel, ct); // cannot fail
 
-					return UpdateResult.Failed(channel, status, e);
+					status = "reporting success to healthchecks";
+					await hc.Report(channel, ct);
+
+					return UpdateResult.Succeeded(channel);
 				}
+				else
+				{
+					status = "reporting success (not changed) to healthchecks";
+					await hc.Report(channel, ct);
+
+					return UpdateResult.NotChanged(channel);
+				}
+			}
+			catch (Exception e)
+			{
+				await hc.Failed(channel, ct); // cannot fail
+
+				return UpdateResult.Failed(channel, status, e);
 			}
 		}
 	}

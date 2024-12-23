@@ -1,23 +1,11 @@
 using System;
-using System.Linq;
 using System.Text.Json.Serialization;
 
-namespace Crawler.Client.GitHub
-{
-	internal sealed class Release
-	{
-		[JsonPropertyName("html_url")]
-		public required string Url { get; set; }
+namespace Crawler.Client.GitHub;
 
-		[JsonPropertyName("name")]
-		public required string Version { get; set; }
-
-		[JsonPropertyName("body")]
-		public required string Notes { get; set; }
-
-		public required Asset[] Assets { get; set; }
-
-		[JsonPropertyName("published_at")]
-		public required DateTimeOffset PublicationDate { get; set; }
-	}
-}
+internal sealed record Release(
+	[property: JsonPropertyName("html_url")] string Url,
+	[property: JsonPropertyName("name")] string Version,
+	[property: JsonPropertyName("body")] string Notes,
+	[property: JsonPropertyName("assets")] Asset[] Assets,
+	[property: JsonPropertyName("published_at")] DateTimeOffset PublicationDate);
