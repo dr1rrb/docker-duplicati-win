@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Crawler;
 
-internal sealed class ReleaseCrawler(HealthchecksApi hc, GitHubApi gitHub, AzureDevOpsApi azure, ILogger<ReleaseCrawler> log)
+internal sealed partial class ReleaseCrawler(HealthchecksApi hc, GitHubApi gitHub, AzureDevOpsApi azure, ILogger<ReleaseCrawler> log)
 {
 #if DEBUG
 	private static readonly string[] _channels = ["canary"];
@@ -20,19 +20,27 @@ internal sealed class ReleaseCrawler(HealthchecksApi hc, GitHubApi gitHub, Azure
 	private static readonly string[] _channels = ["stable", "beta", "experimental", "canary"];
 #endif
 
+	#region Logs
+	[LoggerMessage(0, LogLevel.Information, "Launching crawler ({Date})")]
+	private static partial void LogLaunchingCrawler(ILogger logger, DateTime date);
+
+	[LoggerMessage(1, LogLevel.Error, "Failed to crawl releases.")]
+	private static partial void LogErrorCrawlReleases(ILogger logger, Exception exception); 
+	#endregion
+
 	[Function("ScheduledCrawl")]
 	public async Task RunScheduledCrawl(
 		[TimerTrigger("0 0 3 * * *")] TimerInfo myTimer,
 		CancellationToken ct)
 	{
-		log.LogInformation($"Launching crawler ({DateTime.Now})");
+		LogLaunchingCrawler(log, DateTime.Now);
 		try
 		{
 			await CrawlReleases(_channels, ct);
 		}
 		catch (Exception e)
 		{
-			log.LogError(e, "Failed to crawl releases.");
+			LogErrorCrawlReleases(log, e);
 		}
 	}
 
@@ -50,7 +58,7 @@ internal sealed class ReleaseCrawler(HealthchecksApi hc, GitHubApi gitHub, Azure
 		}
 		catch (Exception e)
 		{
-			log.LogError(e, "Failed to crawl releases.");
+			LogErrorCrawlReleases(log, e);
 
 			throw;
 		}
@@ -113,7 +121,7 @@ internal sealed class ReleaseCrawler(HealthchecksApi hc, GitHubApi gitHub, Azure
 							.With("version", version)
 							.With("url", release.data.Url)
 							.With("notes", release.data.Notes);
-								
+
 						await azure.UpdateBuildVariables(@default, ct);
 
 						status = "queuing new **default** build";

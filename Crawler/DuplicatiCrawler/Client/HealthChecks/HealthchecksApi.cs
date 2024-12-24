@@ -7,8 +7,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Crawler.Client.HealthChecks;
 
-internal sealed class HealthchecksApi(IConfiguration config, ILogger<HealthchecksApi> log) : IDisposable
+internal sealed partial class HealthchecksApi(IConfiguration config, ILogger<HealthchecksApi> log) : IDisposable
 {
+	#region Logs
+	[LoggerMessage(0, LogLevel.Error, "Failed to ping healthchecks.io")]
+	private static partial void LogHealthcheckError(ILogger logger, Exception exception); 
+	#endregion
+
 	private readonly HttpClient _client = new()
 	{
 		BaseAddress = new Uri("https://hc-ping.com/")
@@ -28,12 +33,12 @@ internal sealed class HealthchecksApi(IConfiguration config, ILogger<Healthcheck
 				return;
 			}
 
-			using var response = await _client.GetAsync(check + method, ct);
+			using var response = await _client.GetAsync(new Uri(check + method, UriKind.Relative), ct);
 			response.EnsureSuccessStatusCode();
 		}
 		catch (Exception e)
 		{
-			log.LogError(e, "Failed to ping healthchecks.io");
+			LogHealthcheckError(log, e);
 		}
 	}
 

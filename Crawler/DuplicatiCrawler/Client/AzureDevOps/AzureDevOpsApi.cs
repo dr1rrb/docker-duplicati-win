@@ -23,7 +23,7 @@ internal sealed class AzureDevOpsApi(string auth) : IDisposable
 
 	public async Task<Dictionary<string, VariableGroup>> GetBuildVariables(CancellationToken ct)
 	{
-		var response = await _client.GetFromJsonAsync<GetVariableGroupsResponse>("distributedtask/variablegroups?api-version=5.0-preview.1", ct)
+		var response = await _client.GetFromJsonAsync<GetVariableGroupsResponse>(new Uri("distributedtask/variablegroups?api-version=5.0-preview.1", UriKind.Relative), ct)
 			?? throw new InvalidOperationException("Failed to get build variables.");
 
 		return response.Groups.ToDictionary(g => g.Name.TrimStart("duplicati-", StringComparison.OrdinalIgnoreCase));
@@ -32,7 +32,7 @@ internal sealed class AzureDevOpsApi(string auth) : IDisposable
 	public async Task UpdateBuildVariables(VariableGroup group, CancellationToken ct)
 	{
 		using var body = JsonContent.Create(group);
-		using var response = await _client.PutAsync($"distributedtask/variablegroups/{group.Id}?api-version=5.0-preview.1", body, ct);
+		using var response = await _client.PutAsync(new Uri($"distributedtask/variablegroups/{group.Id}?api-version=5.0-preview.1", UriKind.Relative), body, ct);
 		response.EnsureSuccessStatusCode();
 	}
 
@@ -44,7 +44,7 @@ internal sealed class AzureDevOpsApi(string auth) : IDisposable
 		};
 
 		using var body = JsonContent.Create(new QueueBuildRequest(new BuildDefinition(1), JsonSerializer.Serialize(parameters)));
-		using var response = await _client.PostAsync("build/builds?api-version=5.0", body, ct);
+		using var response = await _client.PostAsync(new Uri("build/builds?api-version=5.0", UriKind.Relative), body, ct);
 		response.EnsureSuccessStatusCode();
 	}
 
