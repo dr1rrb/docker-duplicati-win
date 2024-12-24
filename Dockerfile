@@ -4,7 +4,7 @@ WORKDIR C:\\duplicati
 
 # Download and unzip Duplicati
 RUN cmd /C curl -L {duplicati.install} -o duplicati.zip & \
-tar -xf duplicati.zip & \
+tar -xf duplicati.zip --strip-components=1 & \
 del duplicati.zip
 
 # Image config
